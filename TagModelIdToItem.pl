@@ -1,100 +1,77 @@
 #!/usr/bin/env perl
 
 use 5.16.0;
-use lib 'auto-lib', 'lib';
-use JSON::Parse 'json_file_to_perl';
 
 use strict;
 use warnings;
-use Paws;
 use Data::Dumper;
 use POSIX;
 use MyModules::Bean::ItemTag;
 use MyModules::Eleven::ItemTagModelIdMySqlCaller;
+use MyModules::Eleven::ItemModelIdUpdater;
 use Data::Dumper;
 
 my $NOW =  strftime "%F %T", localtime $^T;
 
-# get the open HPs from eleven specialOrders DB
+my $filename = 'BadModelIds';
+open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
 
-my $modelIdUpdater = get
-my $caller = getElevenCaller();
-$caller->connect();
-$caller->getItemTagsModelId();;
+my $modelIdUpdater = getUpdater();
+$modelIdUpdater->connect();
 
-foreach my $itemTagModelId (@{$caller->itemTagsModelId}) {
-	eval {
-		say (Dumper($itemTagModelId));
-		updateItemModelTreeEntry($itemTagModelId->tag);
-		1;
-	} || do {
-		my $e = $@;
-		say $e;
-	};
+my $itemTagSelector = getElevenCaller();
+$itemTagSelector->connect();
+$itemTagSelector->getItemTagsWithModelId();;
+
+my $count = 0;
+foreach my $itemTagModelId (@{$itemTagSelector->itemTagsModelId}) {
+    eval {
+        my @modelIdSplitUp = split(/:/,$itemTagModelId->tag);
+        my $modelId = $modelIdSplitUp[1];
+        my $result = $modelIdUpdater->updateItem($modelId, $itemTagModelId->item);
+        if ( $result->status == -1 ) {
+            print $fh $modelId . ',' . $itemTagModelId->item  . "\n";
+        } elsif ( $result->status == 0 ) {
+            say 'Some other error occured.';
+            say Dumper($result);
+        } else {
+            # Ok we are good
+            $count++;
+        }
+        1;
+    } || do {
+        my $e = $@;
+    };
 }
 
-$caller->disconnect();
+$itemTagSelector->disconnect();
+$modelIdUpdater->disconnect();
+close $fh;
+say "Updated " . $count . " items.";
 
 sub getElevenCaller {
 
     my $object = MyModules::Eleven::ItemTagModelIdMySqlCaller->new(
         archived => 0,
-        database => '',
-        host  => '',
-        username   => '',
-        password   => '',
+        database => 'vvvvvv',
+        host  => 'localhost',
+        username   => 'zzzzzz',
+        password   => 'wwwwww',
     );
 
     return $object;
 }
 
-sub updateItemModelTreeEntry {
 
-	my $modelIdTag = shift;
-	my @modelIdSplitUp = split(/:/,$modelIdTag)[0];
-	my $modelId = $modelIdSplitUp[1];
-	say $modelId;
-	my $statement = 
-		$self->mysql->prepare(
-				'update item set model_tree="' . $modelId . ' where id="' . $itemId);
-	$statement->execute();
-        $statement->finish();
+sub getUpdater {
 
+    my $object = MyModules::Eleven::ItemModelIdUpdater->new(
+        archived => 0,
+        database => 'vvvvvv',
+        host  => 'localhost',
+        username   => 'xxxxxx',
+        password   => 'yyyyyy',
+    );
 
-
-
- my $model = shift;
-        my $result = MyModules::Bean::Result->new();
-
-        my $statement = $elevenDB->prepare("insert into item_location_scan_cp values(?,?,?,?,?,?,?,?,?)");
-        my $resultExecute = $statement->execute(
-                        $model->id(),
-                        $model->serialized(),
-#                       1, 
-                        $model->scan_location(),
-                        $model->destination_location(),
-                        $model->employee(),
-                        $model->action(),
-                        $model->timestamp(),
-                        $model->last_modified(),
-                        0
-                      0
-                        );
-
-        if ( $statement->err ) {
-                say $statement->errstr;
-                say $statement->err;
-                $result->status(0);
-                $result->error($statement->errstr);
-        } else {
-                $result->entityId($model->id());
-                $result->status(1);
-                $result->otherInfo('Model with id ' . $model->id . ' created in duraAce.');
-        }
-
-        return $result;
-
+    return $object;
 }
-
-
-

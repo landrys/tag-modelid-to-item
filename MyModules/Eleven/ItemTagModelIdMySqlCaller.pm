@@ -1,6 +1,5 @@
 package MyModules::Eleven::ItemTagModelIdMySqlCaller;
 
-use Switch;
 use Moose;
 use 5.16.0;
 use strict;
@@ -32,14 +31,15 @@ sub BUILD {
 
 }
 
-sub getItemTagsModelId {
+sub getItemTagsWithModelId {
     my $self = shift;
     my $statement = 
 	    $self->mysql->prepare(
-		    'select * from item_tag where tag regexp \'modelid:\\d*\' order by item desc limit 3'
+		    'select * from item_tag where tag regexp \'modelid:\\d*\''
 			    );
 
-    $statement->execute();
+    my $count = $statement->execute();
+    say "Processing " . $count . " item tags with model ids...";
 
     while(my $ref = $statement->fetchrow_hashref) {
 	    my $bean = MyModules::Bean::ItemTag->new;
