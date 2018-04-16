@@ -7,7 +7,7 @@ use Carp;
 use Data::Dumper;
 use POSIX;
 use MyModules::Bean::ModelTree;
-use MyModules::Eleven::ModelTreeMySql;
+use MyModules::Eleven::ModelTreeMysql;
 use MyModules::MyMailer;
 use Moose;
 
