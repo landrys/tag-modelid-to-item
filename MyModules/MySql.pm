@@ -34,9 +34,10 @@ has 'connection' => (
 
 
 sub connect {
+    my %attr = ( RaiseError => 1 );
     my $self = shift;
     my $connectionInfo="dbi:mysql:" . $self->database() . ";"  . $self->host();
-    $self->connection(DBI->connect($connectionInfo,$self->user(),$self->password()));
+    $self->connection(DBI->connect($connectionInfo,$self->user(),$self->password(),\%attr));
 }
 
 sub close {
